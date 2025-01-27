@@ -3,8 +3,11 @@ import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import path from 'path';
 import mime from 'mime-types';
+import Bull from 'bull';
 import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
+
+const fileQueue = new Bull('fileQueue');
 
 class FilesController {
   static async postUpload(req, res) {
@@ -72,6 +75,13 @@ class FilesController {
 
     fileDoc.localPath = localPath;
     const result = await dbClient.db.collection('files').insertOne(fileDoc);
+
+    if (type === 'image') {
+      fileQueue.add({
+        userId: userId.toString(),
+        fileId: result.insertedId.toString(),
+      });
+    }
 
     return res.status(201).json({
       id: result.insertedId,
@@ -241,11 +251,18 @@ class FilesController {
       return res.status(404).json({ error: 'Not found' });
     }
 
-    // Get MIME type
-    const mimeType = mime.lookup(file.name);
+    const { size } = req.query;
+    let filePath = file.localPath;
 
-    // Read and return file content
-    const fileContent = fs.readFileSync(file.localPath);
+    if (size && ['500', '250', '100'].includes(size)) {
+      filePath = `${file.localPath}_${size}`;
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: 'Not found' });
+      }
+    }
+
+    const mimeType = mime.lookup(file.name);
+    const fileContent = fs.readFileSync(filePath);
     res.setHeader('Content-Type', mimeType);
     return res.send(fileContent);
   }
