@@ -1,7 +1,11 @@
 import sha1 from 'sha1';
 import { ObjectId } from 'mongodb';
+import Bull from 'bull';
 import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
+
+// Create userQueue
+const userQueue = new Bull('userQueue');
 
 class UsersController {
   static async postNew(req, res) {
@@ -15,7 +19,6 @@ class UsersController {
       return res.status(400).json({ error: 'Missing password' });
     }
 
-    // Check if user already exists
     const users = dbClient.db.collection('users');
     const existingUser = await users.findOne({ email });
 
@@ -23,14 +26,17 @@ class UsersController {
       return res.status(400).json({ error: 'Already exist' });
     }
 
-    // Hash password and create new user
     const hashedPassword = sha1(password);
     const result = await users.insertOne({
       email,
       password: hashedPassword,
     });
 
-    // Return new user data
+    // Add welcome email job to queue
+    await userQueue.add({
+      userId: result.insertedId.toString(),
+    });
+
     return res.status(201).json({
       id: result.insertedId,
       email,
