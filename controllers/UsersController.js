@@ -1,7 +1,7 @@
 import sha1 from 'sha1';
+import { ObjectId } from 'mongodb';
 import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
-import { ObjectId } from 'mongodb';
 
 class UsersController {
   static async postNew(req, res) {
@@ -53,9 +53,9 @@ class UsersController {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    return res.status(200).json({ 
+    return res.status(200).json({
       id: user._id.toString(),
-      email: user.email 
+      email: user.email,
     });
   }
 }
