@@ -143,6 +143,74 @@ class FilesController {
 
     return res.status(200).json(formattedFiles);
   }
+
+  static async putPublish(req, res) {
+    // Get user from token
+    const token = req.header('X-Token');
+    const userId = await redisClient.get(`auth_${token}`);
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    // Find and update file
+    const fileId = req.params.id;
+    const file = await dbClient.db.collection('files').findOne({
+      _id: ObjectID(fileId),
+      userId: ObjectID(userId),
+    });
+
+    if (!file) return res.status(404).json({ error: 'Not found' });
+
+    // Update isPublic to true
+    await dbClient.db.collection('files').updateOne(
+      { _id: ObjectID(fileId) },
+      { $set: { isPublic: true } },
+    );
+
+    // Return updated file
+    const updatedFile = {
+      id: file._id,
+      userId: file.userId,
+      name: file.name,
+      type: file.type,
+      isPublic: true,
+      parentId: file.parentId,
+    };
+
+    return res.status(200).json(updatedFile);
+  }
+
+  static async putUnpublish(req, res) {
+    // Get user from token
+    const token = req.header('X-Token');
+    const userId = await redisClient.get(`auth_${token}`);
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    // Find and update file
+    const fileId = req.params.id;
+    const file = await dbClient.db.collection('files').findOne({
+      _id: ObjectID(fileId),
+      userId: ObjectID(userId),
+    });
+
+    if (!file) return res.status(404).json({ error: 'Not found' });
+
+    // Update isPublic to false
+    await dbClient.db.collection('files').updateOne(
+      { _id: ObjectID(fileId) },
+      { $set: { isPublic: false } },
+    );
+
+    // Return updated file
+    const updatedFile = {
+      id: file._id,
+      userId: file.userId,
+      name: file.name,
+      type: file.type,
+      isPublic: false,
+      parentId: file.parentId,
+    };
+
+    return res.status(200).json(updatedFile);
+  }
 }
 
 export default FilesController;
