@@ -13,8 +13,10 @@ class FilesController {
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
     // Validate inputs
-    const { name, type, parentId = 0, isPublic = false, data } = req.body;
-    
+    const {
+      name, type, parentId = 0, isPublic = false, data,
+    } = req.body;
+
     if (!name) return res.status(400).json({ error: 'Missing name' });
     if (!type || !['folder', 'file', 'image'].includes(type)) {
       return res.status(400).json({ error: 'Missing type' });
@@ -41,7 +43,7 @@ class FilesController {
       name,
       type,
       isPublic,
-      parentId: parentId === 0 ? '0' : ObjectID(parentId)
+      parentId: parentId === 0 ? '0' : ObjectID(parentId),
     };
 
     // Handle folder creation
@@ -53,7 +55,7 @@ class FilesController {
         name,
         type,
         isPublic,
-        parentId
+        parentId,
       });
     }
 
@@ -76,7 +78,7 @@ class FilesController {
       name,
       type,
       isPublic,
-      parentId
+      parentId,
     });
   }
 }
